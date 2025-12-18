@@ -1,0 +1,226 @@
+{
+  "positions": [
+    {
+      "symbol": "ZECUSDT",
+      "rank": 1,
+      "current_oi": 743221.31,
+      "oi_delta": 3448.823999999906,
+      "oi_delta_percent": 0.4640372865519566,
+      "oi_delta_value": 4817592.126799941,
+      "price_delta_percent": 0.9625999028568935,
+      "net_long": -110176.92599999608,
+      "net_short": 725698.7299999961
+    },
+    {
+      "symbol": "USUALUSDT",
+      "rank": 2,
+      "current_oi": 171987231,
+      "oi_delta": 50383648,
+      "oi_delta_percent": 29.294993417272934,
+      "oi_delta_value": 1525249.590520001,
+      "price_delta_percent": 0.6805035726437642,
+      "net_long": -331034356,
+      "net_short": 363367237
+    },
+    {
+      "symbol": "AXLUSDT",
+      "rank": 3,
+      "current_oi": 28382204.3,
+      "oi_delta": 5503484.300000001,
+      "oi_delta_percent": 19.390616182690223,
+      "oi_delta_value": 1027665.1642699996,
+      "price_delta_percent": 6.962509563886761,
+      "net_long": -52215938.20000017,
+      "net_short": 59702731.700000145
+    },
+    {
+      "symbol": "PAXGUSDT",
+      "rank": 4,
+      "current_oi": 18094.93,
+      "oi_delta": 125.72199999999793,
+      "oi_delta_percent": 0.6947913034203389,
+      "oi_delta_value": 672126.9015000015,
+      "price_delta_percent": 0.16994551952275297,
+      "net_long": -17290.446000000025,
+      "net_short": 13510.554000000026
+    },
+    {
+      "symbol": "ATUSDT",
+      "rank": 5,
+      "current_oi": 67794242,
+      "oi_delta": 1048885,
+      "oi_delta_percent": 1.5471594180520523,
+      "oi_delta_value": 587143.3827999998,
+      "price_delta_percent": 6.454630495790462,
+      "net_long": -50635804,
+      "net_short": 113805811
+    },
+    {
+      "symbol": "NIGHTUSDT",
+      "rank": 6,
+      "current_oi": 228110119,
+      "oi_delta": 4832531,
+      "oi_delta_percent": 2.118507947470756,
+      "oi_delta_value": 578059.9070599992,
+      "price_delta_percent": 3.0147662018047563,
+      "net_long": 88979133,
+      "net_short": 116091848
+    },
+    {
+      "symbol": "ICNTUSDT",
+      "rank": 7,
+      "current_oi": 18062962,
+      "oi_delta": 1553290,
+      "oi_delta_percent": 8.599309459877068,
+      "oi_delta_value": 534978.7836000007,
+      "price_delta_percent": -0.5910800644814562,
+      "net_long": -8512761,
+      "net_short": 20173683
+    },
+    {
+      "symbol": "LUNA2USDT",
+      "rank": 8,
+      "current_oi": 113331443,
+      "oi_delta": 405603,
+      "oi_delta_percent": 0.3578909694108457,
+      "oi_delta_value": 531477.9545199983,
+      "price_delta_percent": 2.552290836653382,
+      "net_long": -54373668,
+      "net_short": 140702710
+    },
+    {
+      "symbol": "BCHUSDT",
+      "rank": 9,
+      "current_oi": 290423.748,
+      "oi_delta": 476.94899999996414,
+      "oi_delta_percent": 0.16422520654198158,
+      "oi_delta_value": 480070.12829995155,
+      "price_delta_percent": 0.1207729468598916,
+      "net_long": -5864.217999998858,
+      "net_short": -59768.4710000011
+    },
+    {
+      "symbol": "WETUSDT",
+      "rank": 10,
+      "current_oi": 26848210,
+      "oi_delta": -335192,
+      "oi_delta_percent": -1.2484705684289565,
+      "oi_delta_value": 379950.24804,
+      "price_delta_percent": 8.207762003973066,
+      "net_long": 10337018,
+      "net_short": 9300530
+    },
+    {
+      "symbol": "LSKUSDT",
+      "rank": 11,
+      "current_oi": 23692994,
+      "oi_delta": 916119,
+      "oi_delta_percent": 3.8666240324038403,
+      "oi_delta_value": 311216.40759999957,
+      "price_delta_percent": 2.4342745861733226,
+      "net_long": -35536478,
+      "net_short": 52501665
+    },
+    {
+      "symbol": "FOLKSUSDT",
+      "rank": 12,
+      "current_oi": 966264.4,
+      "oi_delta": -166.80000000004657,
+      "oi_delta_percent": -0.017262355934881443,
+      "oi_delta_value": 286476.44120000117,
+      "price_delta_percent": 2.089593961842206,
+      "net_long": -146763.49999999633,
+      "net_short": 699982.9999999963
+    },
+    {
+      "symbol": "GUNUSDT",
+      "rank": 13,
+      "current_oi": 90882476,
+      "oi_delta": 17308861,
+      "oi_delta_percent": 19.045322884909076,
+      "oi_delta_value": 278459.25939000025,
+      "price_delta_percent": 1.875000000000008,
+      "net_long": -290750008,
+      "net_short": 260255608
+    },
+    {
+      "symbol": "STABLEUSDT",
+      "rank": 14,
+      "current_oi": 1054000586,
+      "oi_delta": -817547,
+      "oi_delta_percent": -0.07756608590728051,
+      "oi_delta_value": 273126.3247500006,
+      "price_delta_percent": 1.9650655021834016,
+      "net_long": 259114446,
+      "net_short": 760695518
+    },
+    {
+      "symbol": "RSRUSDT",
+      "rank": 15,
+      "current_oi": 1006777643,
+      "oi_delta": 71853009,
+      "oi_delta_percent": 7.1369293408117525,
+      "oi_delta_value": 262348.70413099974,
+      "price_delta_percent": 0.4690706537672224,
+      "net_long": -1630650638,
+      "net_short": 1823152439
+    },
+    {
+      "symbol": "RIVERUSDT",
+      "rank": 16,
+      "current_oi": 1416501.5,
+      "oi_delta": 22388.899999999907,
+      "oi_delta_percent": 1.5805772178850435,
+      "oi_delta_value": 257619.35269999877,
+      "price_delta_percent": 1.0711665443873735,
+      "net_long": -394846.0999999823,
+      "net_short": 1594458.0999999833
+    },
+    {
+      "symbol": "HUSDT",
+      "rank": 17,
+      "current_oi": 170809089,
+      "oi_delta": 675980,
+      "oi_delta_percent": 0.3957517740756758,
+      "oi_delta_value": 224920.18229999952,
+      "price_delta_percent": 2.0491803278688594,
+      "net_long": -179056146,
+      "net_short": 154980102
+    },
+    {
+      "symbol": "UAIUSDT",
+      "rank": 18,
+      "current_oi": 30208336,
+      "oi_delta": 1026817,
+      "oi_delta_percent": 3.3991180447675107,
+      "oi_delta_value": 200669.91610000003,
+      "price_delta_percent": 1.001335113484647,
+      "net_long": -40631432,
+      "net_short": 58312878
+    },
+    {
+      "symbol": "POWERUSDT",
+      "rank": 19,
+      "current_oi": 19062747,
+      "oi_delta": 156869,
+      "oi_delta_percent": 0.8229086815242315,
+      "oi_delta_value": 189488.99170999927,
+      "price_delta_percent": 3.8645966861320704,
+      "net_long": 4502327,
+      "net_short": 10381389
+    },
+    {
+      "symbol": "币安人生USDT",
+      "rank": 20,
+      "current_oi": 189301267,
+      "oi_delta": 273165,
+      "oi_delta_percent": 0.14430172831331342,
+      "oi_delta_value": 175684.51125000045,
+      "price_delta_percent": 0.611496127191195,
+      "net_long": -136590450,
+      "net_short": 188769360
+    }
+  ],
+  "fetched_at": "2025-12-12T15:26:52.3587532+08:00",
+  "source_type": "api"
+}
