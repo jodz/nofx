@@ -1173,6 +1173,129 @@ var okxTag = func() string {
 	return string(b)
 }()
 
+// CreateStopEntryOrder creates a stop entry order (Al Brooks style)
+// direction: "buy" for stop buy (breakout above), "sell" for stop sell (breakout below)
+// triggerPrice: price at which the order will be triggered
+// quantity: position size in base currency
+// stopLoss: stop loss price (optional, set to 0 to skip)
+// takeProfit: take profit price (optional, set to 0 to skip)
+// leverage: leverage to use (1-125)
+func (t *OKXTrader) CreateStopEntryOrder(symbol, direction string, triggerPrice, quantity, stopLoss, takeProfit float64, leverage int) (map[string]interface{}, error) {
+	instId := t.convertSymbol(symbol)
+
+	// Get instrument info
+	inst, err := t.getInstrument(symbol)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get instrument info: %w", err)
+	}
+
+	// Calculate contract size: quantity (in base asset) / ctVal (asset per contract)
+	sz := quantity / inst.CtVal
+	szStr := t.formatSize(sz, inst)
+
+	// Validate direction
+	direction = strings.ToLower(direction)
+	if direction != "buy" && direction != "sell" {
+		return nil, fmt.Errorf("invalid direction: %s, must be 'buy' or 'sell'", direction)
+	}
+
+	// Determine order side and position side
+	var side, posSide, triggerType string
+	if direction == "buy" {
+		side = "buy"
+		posSide = "long"
+		triggerType = "above" // Trigger when price >= trigger price
+	} else {
+		side = "sell"
+		posSide = "short"
+		triggerType = "below" // Trigger when price <= trigger price
+	}
+
+	// Set leverage if specified
+	if leverage > 0 {
+		if err := t.SetLeverage(symbol, leverage); err != nil {
+			logger.Infof("  ⚠️ Failed to set leverage: %v", err)
+		}
+	}
+
+	// Create the stop entry order
+	body := map[string]interface{}{
+		"instId":          instId,
+		"tdMode":          "cross",
+		"side":            side,
+		"posSide":         posSide,
+		"ordType":         "conditional",
+		"sz":              szStr,
+		"triggerPx":       fmt.Sprintf("%.8f", triggerPrice),
+		"ordPx":           "-1",   // Market price
+		"triggerPxType":   "last", // Trigger based on last traded price
+		"triggerPxVar":    0,      // No price variance
+		"tpTriggerPxType": "last",
+		"slTriggerPxType": "last",
+		"tgtCcy":          "base_ccy", // Use base currency for quantity
+		"clOrdId":         genOkxClOrdID(),
+		"tag":             okxTag,
+	}
+
+	// Add stop loss if specified
+	if stopLoss > 0 {
+		body["slTriggerPx"] = fmt.Sprintf("%.8f", stopLoss)
+		body["slOrdPx"] = "-1" // Market price
+	}
+
+	// Add take profit if specified
+	if takeProfit > 0 {
+		body["tpTriggerPx"] = fmt.Sprintf("%.8f", takeProfit)
+		body["tpOrdPx"] = "-1" // Market price
+	}
+
+	// Log the order details
+	logger.Infof("Placing Al Brooks stop entry order: %s %s @ %.8f (SL: %.8f, TP: %.8f, Leverage: %d)",
+		symbol, direction, triggerPrice, stopLoss, takeProfit, leverage)
+
+	// Send the order
+	data, err := t.doRequest("POST", okxAlgoOrderPath, body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create stop entry order: %w", err)
+	}
+
+	// Parse the response
+	var resp []struct {
+		SCode   string `json:"sCode"`
+		SMsg    string `json:"sMsg"`
+		AlgoId  string `json:"algoId"`
+		ClOrdId string `json:"clOrdId"`
+	}
+
+	if err := json.Unmarshal(data, &resp); err != nil {
+		return nil, fmt.Errorf("failed to parse order response: %w", err)
+	}
+
+	if len(resp) == 0 || resp[0].SCode != "0" {
+		msg := "unknown error"
+		if len(resp) > 0 {
+			msg = resp[0].SMsg
+		}
+		return nil, fmt.Errorf("failed to create stop entry order: %s", msg)
+	}
+
+	// Log success
+	logger.Infof("✓ Stop entry order placed successfully: %s %s @ %.8f (Order ID: %s)",
+		symbol, direction, triggerPrice, resp[0].AlgoId)
+
+	return map[string]interface{}{
+		"orderId":    resp[0].AlgoId,
+		"symbol":     symbol,
+		"status":     "NEW",
+		"side":       side,
+		"posSide":    posSide,
+		"quantity":   quantity,
+		"price":      triggerPrice,
+		"stopLoss":   stopLoss,
+		"takeProfit": takeProfit,
+	}, nil
+}
+
 // GetClosedPnL retrieves closed position PnL records from OKX
 // OKX API: /api/v5/account/positions-history
 func (t *OKXTrader) GetClosedPnL(startTime time.Time, limit int) ([]ClosedPnLRecord, error) {
@@ -1198,19 +1321,19 @@ func (t *OKXTrader) GetClosedPnL(startTime time.Time, limit int) ([]ClosedPnLRec
 		Code string `json:"code"`
 		Msg  string `json:"msg"`
 		Data []struct {
-			InstID      string `json:"instId"`      // Instrument ID (e.g., "BTC-USDT-SWAP")
-			Direction   string `json:"direction"`   // Position direction: "long" or "short"
-			OpenAvgPx   string `json:"openAvgPx"`   // Average open price
-			CloseAvgPx  string `json:"closeAvgPx"`  // Average close price
+			InstID        string `json:"instId"`        // Instrument ID (e.g., "BTC-USDT-SWAP")
+			Direction     string `json:"direction"`     // Position direction: "long" or "short"
+			OpenAvgPx     string `json:"openAvgPx"`     // Average open price
+			CloseAvgPx    string `json:"closeAvgPx"`    // Average close price
 			CloseTotalPos string `json:"closeTotalPos"` // Closed position quantity
-			RealizedPnl string `json:"realizedPnl"` // Realized PnL
-			Fee         string `json:"fee"`         // Total fee
-			FundingFee  string `json:"fundingFee"`  // Funding fee
-			Lever       string `json:"lever"`       // Leverage
-			CTime       string `json:"cTime"`       // Position open time
-			UTime       string `json:"uTime"`       // Position close time
-			Type        string `json:"type"`        // Close type: 1=close position, 2=partial close, 3=liquidation, 4=partial liquidation
-			PosId       string `json:"posId"`       // Position ID
+			RealizedPnl   string `json:"realizedPnl"`   // Realized PnL
+			Fee           string `json:"fee"`           // Total fee
+			FundingFee    string `json:"fundingFee"`    // Funding fee
+			Lever         string `json:"lever"`         // Leverage
+			CTime         string `json:"cTime"`         // Position open time
+			UTime         string `json:"uTime"`         // Position close time
+			Type          string `json:"type"`          // Close type: 1=close position, 2=partial close, 3=liquidation, 4=partial liquidation
+			PosId         string `json:"posId"`         // Position ID
 		} `json:"data"`
 	}
 
