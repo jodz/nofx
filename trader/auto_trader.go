@@ -865,6 +865,10 @@ func (at *AutoTrader) executeDecisionWithRecord(decision *decision.Decision, act
 		return at.executeOpenLongWithRecord(decision, actionRecord)
 	case "open_short":
 		return at.executeOpenShortWithRecord(decision, actionRecord)
+	case "stop_entry_long":
+		return at.executeStopEntryWithRecord(decision, actionRecord)
+	case "stop_entry_short":
+		return at.executeStopEntryWithRecord(decision, actionRecord)
 	case "close_long":
 		return at.executeCloseLongWithRecord(decision, actionRecord)
 	case "close_short":
@@ -1229,6 +1233,72 @@ func (at *AutoTrader) executeCloseShortWithRecord(decision *decision.Decision, a
 	at.recordAndConfirmOrder(order, decision.Symbol, "close_short", quantity, marketData.CurrentPrice, 0, entryPrice)
 
 	logger.Infof("  ✓ Position closed successfully")
+	return nil
+}
+
+// executeStopEntryWithRecord executes a stop entry order (Al Brooks style)
+func (at *AutoTrader) executeStopEntryWithRecord(decision *decision.Decision, actionRecord *store.DecisionAction) error {
+	// Determine direction and position side
+	var direction, posSide string
+	if decision.Action == "stop_entry_long" {
+		direction = "buy"
+		posSide = "long"
+	} else if decision.Action == "stop_entry_short" {
+		direction = "sell"
+		posSide = "short"
+	} else {
+		return fmt.Errorf("invalid stop entry action: %s", decision.Action)
+	}
+
+	logger.Infof("  🎯 %s stop entry: %s @ %.8f (SL: %.8f, TP: %.8f)",
+		strings.ToUpper(direction), decision.Symbol,
+		decision.TriggerPrice, decision.StopLoss, decision.TakeProfit)
+
+	// Get instrument info for tick size
+	inst, err := at.trader.(*OKXTrader).getInstrument(decision.Symbol)
+	if err != nil {
+		return fmt.Errorf("failed to get instrument info: %w", err)
+	}
+
+	// Calculate quantity: position size in USD / trigger price
+	quantity := decision.PositionSizeUSD / decision.TriggerPrice
+	actionRecord.Quantity = quantity
+	actionRecord.Price = decision.TriggerPrice
+	actionRecord.StopLoss = decision.StopLoss
+	actionRecord.TakeProfit = decision.TakeProfit
+
+	// Create stop entry order with OKX trader
+	okxTrader, ok := at.trader.(*OKXTrader)
+	if !ok {
+		return fmt.Errorf("stop entry is only supported for OKX exchange")
+	}
+
+	// Create the stop entry order
+	order, err := okxTrader.CreateStopEntryOrder(
+		decision.Symbol,
+		direction,
+		decision.TriggerPrice,
+		quantity,
+		decision.StopLoss,
+		decision.TakeProfit,
+		decision.Leverage,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create stop entry order: %w", err)
+	}
+
+	// Record order ID
+	if orderID, ok := order["orderId"].(string); ok {
+		actionRecord.OrderID = orderID
+	}
+
+	logger.Infof("  ✓ Stop entry order placed: %s %s @ %.8f (Order ID: %s)",
+		direction, decision.Symbol, decision.TriggerPrice, order["orderId"])
+
+	// Record position opening time
+	posKey := decision.Symbol + "_" + posSide
+	at.positionFirstSeenTime[posKey] = time.Now().UnixMilli()
+
 	return nil
 }
 
