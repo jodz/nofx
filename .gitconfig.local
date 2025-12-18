@@ -1,0 +1,9 @@
+[alias]
+    # 同步上游更新
+    sync = !git fetch upstream && git rebase upstream/dev
+    
+    # 查看提交图
+    lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+    
+    # 清理已合并的分支
+    cleanup = "!git branch --merged | grep -v '\\*\\|main\\|master\\|dev' | xargs -n 1 git branch -d"

@@ -1200,15 +1200,13 @@ func (t *OKXTrader) CreateStopEntryOrder(symbol, direction string, triggerPrice,
 	}
 
 	// Determine order side and position side
-	var side, posSide, triggerType string
+	var side, posSide string
 	if direction == "buy" {
 		side = "buy"
 		posSide = "long"
-		triggerType = "above" // Trigger when price >= trigger price
 	} else {
 		side = "sell"
 		posSide = "short"
-		triggerType = "below" // Trigger when price <= trigger price
 	}
 
 	// Set leverage if specified
