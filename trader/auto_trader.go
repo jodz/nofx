@@ -34,13 +34,13 @@ type AutoTraderConfig struct {
 	BybitSecretKey string
 
 	// OKX API configuration
-	OKXAPIKey    string
-	OKXSecretKey string
+	OKXAPIKey     string
+	OKXSecretKey  string
 	OKXPassphrase string
 
 	// Bitget API configuration
-	BitgetAPIKey    string
-	BitgetSecretKey string
+	BitgetAPIKey     string
+	BitgetSecretKey  string
 	BitgetPassphrase string
 
 	// Hyperliquid configuration
@@ -339,6 +339,67 @@ func NewAutoTrader(config AutoTraderConfig, st *store.Store, userID string) (*Au
 	}, nil
 }
 
+// alignToTradingPeriod 对齐到下一个交易周期起始点（包括当前正好在起点时立即返回）
+func alignToTradingPeriod(interval time.Duration) time.Duration {
+	if interval <= 0 {
+		fmt.Printf("⏱️ Invalid interval: %v, skipping alignment\n", interval)
+		return 0
+	}
+
+	minutes := int(interval.Minutes())
+	if minutes <= 0 {
+		fmt.Printf("⏱️ Interval too small: %v\n", interval)
+		return 0
+	}
+
+	now := time.Now().UTC()
+	// 取当前时间的日期部分 + 分钟数（忽略秒、毫秒、纳秒）
+	base := now.Truncate(time.Minute)
+
+	// 计算当前在一天内的总分钟数
+	currentTotalMinutes := base.Hour()*60 + base.Minute()
+
+	// Calculate the next period start time
+	var nextPeriodStart time.Time
+	if currentTotalMinutes%minutes == 0 {
+		// 正好在周期起点 → 使用当前时间作为起点（不等待）
+		nextPeriodStart = base.Truncate(time.Minute)
+		fmt.Printf("⏱️ Already at the start of %s period: %v\n", formatInterval(interval), nextPeriodStart)
+	} else {
+		// 计算下一个周期起点
+		nextMinute := (currentTotalMinutes/minutes + 1) * minutes
+		if nextMinute >= 1440 {
+			// 跨天
+			nextDay := base.AddDate(0, 0, 1).Truncate(24 * time.Hour)
+			nextMinute = nextMinute % 1440
+			nextPeriodStart = nextDay.Add(time.Duration(nextMinute) * time.Minute)
+		} else {
+			nextPeriodStart = base.Truncate(24 * time.Hour).Add(time.Duration(nextMinute) * time.Minute)
+		}
+		wait := time.Until(nextPeriodStart)
+		fmt.Printf("⏳ Waiting %v until next %s period starts at %v\n",
+			wait.Round(time.Second), formatInterval(interval), nextPeriodStart)
+		time.Sleep(wait)
+	}
+
+	// 返回实际等待时长（测试用）
+	return time.Until(nextPeriodStart)
+}
+
+// formatInterval 格式化间隔字符串（如 15m, 1h, 4h, 90m → 1h30m）
+func formatInterval(d time.Duration) string {
+	totalMinutes := int(d.Minutes())
+	if totalMinutes < 60 {
+		return fmt.Sprintf("%dm", totalMinutes)
+	}
+	hours := totalMinutes / 60
+	mins := totalMinutes % 60
+	if mins == 0 {
+		return fmt.Sprintf("%dh", hours)
+	}
+	return fmt.Sprintf("%dh%dm", hours, mins)
+}
+
 // Run runs the automatic trading main loop
 func (at *AutoTrader) Run() error {
 	at.isRunning = true
@@ -351,6 +412,9 @@ func (at *AutoTrader) Run() error {
 	logger.Info("🤖 AI will make full decisions on leverage, position size, stop loss/take profit, etc.")
 	at.monitorWg.Add(1)
 	defer at.monitorWg.Done()
+
+	// Align to trading period before starting
+	alignToTradingPeriod(at.config.ScanInterval)
 
 	// Start drawdown monitoring
 	at.startDrawdownMonitor()
@@ -1672,8 +1736,8 @@ func (at *AutoTrader) recordAndConfirmOrder(orderResult map[string]interface{}, 
 	}
 
 	// Poll order status to get actual fill price, quantity and fee
-	var actualPrice = price       // fallback to market price
-	var actualQty = quantity      // fallback to requested quantity
+	var actualPrice = price  // fallback to market price
+	var actualQty = quantity // fallback to requested quantity
 	var fee float64
 
 	// Wait for order to be filled and get actual fill data
@@ -1759,10 +1823,10 @@ func (at *AutoTrader) recordPositionChange(orderID, symbol, side, action string,
 		// Update position record
 		err = at.store.Position().ClosePosition(
 			openPos.ID,
-			price,       // exitPrice
-			orderID,     // exitOrderID
+			price,   // exitPrice
+			orderID, // exitOrderID
 			realizedPnL,
-			fee,         // fee from exchange API
+			fee, // fee from exchange API
 			"ai_decision",
 		)
 		if err != nil {
@@ -1856,4 +1920,3 @@ func (at *AutoTrader) enforceMaxPositions(currentPositionCount int) error {
 	}
 	return nil
 }
-
