@@ -128,11 +128,12 @@ type Context struct {
 // Decision AI trading decision
 type Decision struct {
 	Symbol string `json:"symbol"`
-	Action string `json:"action"` // "open_long", "open_short", "close_long", "close_short", "hold", "wait"
+	Action string `json:"action"` // "open_long", "open_short","stop_entry_long", "stop_entry_short", "close_long", "close_short", "hold", "wait"
 
 	// Opening position parameters
 	Leverage        int     `json:"leverage,omitempty"`
 	PositionSizeUSD float64 `json:"position_size_usd,omitempty"`
+	TriggerPrice    float64 `json:"trigger_price,omitempty"` // For stop entry orders
 	StopLoss        float64 `json:"stop_loss,omitempty"`
 	TakeProfit      float64 `json:"take_profit,omitempty"`
 
@@ -810,12 +811,15 @@ func (e *StrategyEngine) BuildSystemPrompt(accountEquity float64, variant string
 	sb.WriteString(fmt.Sprintf("  {\"symbol\": \"BTCUSDT\", \"action\": \"open_short\", \"leverage\": %d, \"position_size_usd\": %.0f, \"stop_loss\": 97000, \"take_profit\": 91000, \"confidence\": 85, \"risk_usd\": 300},\n",
 		riskControl.BTCETHMaxLeverage, examplePositionSize))
 	sb.WriteString("  {\"symbol\": \"ETHUSDT\", \"action\": \"close_long\"}\n")
+	sb.WriteString(fmt.Sprintf("  {\"symbol\": \"ETHUSDT\", \"action\": \"stop_entry_long\", \"leverage\": %d, \"position_size_usd\": %.0f, \"trigger_price\": 3200.5, \"stop_loss\": 3150.0, \"take_profit\": 3400.0, \"confidence\": 80, \"risk_usd\": 200},\n",
+		riskControl.BTCETHMaxLeverage, examplePositionSize/2))
 	sb.WriteString("]\n```\n")
 	sb.WriteString("</decision>\n\n")
 	sb.WriteString("## Field Description\n\n")
-	sb.WriteString("- `action`: open_long | open_short | close_long | close_short | hold | wait\n")
+	sb.WriteString("- `action`: open_long | open_short | stop_entry_long | stop_entry_short | close_long | close_short | hold | wait\n")
 	sb.WriteString(fmt.Sprintf("- `confidence`: 0-100 (opening recommended ≥ %d)\n", riskControl.MinConfidence))
 	sb.WriteString("- Required when opening: leverage, position_size_usd, stop_loss, take_profit, confidence, risk_usd\n")
+	sb.WriteString("- For stop_entry_* actions, also required: trigger_price (price at which to trigger the entry)\n")
 	sb.WriteString("- **IMPORTANT**: All numeric values must be calculated numbers, NOT formulas/expressions (e.g., use `27.76` not `3000 * 0.01`)\n\n")
 
 	// 8. Custom Prompt
@@ -1500,19 +1504,21 @@ func validateDecisions(decisions []Decision, accountEquity float64, btcEthLevera
 
 func validateDecision(d *Decision, accountEquity float64, btcEthLeverage, altcoinLeverage int, btcEthPosRatio, altcoinPosRatio float64) error {
 	validActions := map[string]bool{
-		"open_long":   true,
-		"open_short":  true,
-		"close_long":  true,
-		"close_short": true,
-		"hold":        true,
-		"wait":        true,
+		"open_long":        true,
+		"open_short":       true,
+		"stop_entry_long":  true,
+		"stop_entry_short": true,
+		"close_long":       true,
+		"close_short":      true,
+		"hold":             true,
+		"wait":             true,
 	}
 
 	if !validActions[d.Action] {
 		return fmt.Errorf("invalid action: %s", d.Action)
 	}
 
-	if d.Action == "open_long" || d.Action == "open_short" {
+	if d.Action == "open_long" || d.Action == "open_short" || strings.HasPrefix(d.Action, "stop_entry_") {
 		maxLeverage := altcoinLeverage
 		posRatio := altcoinPosRatio
 		maxPositionValue := accountEquity * posRatio
@@ -1589,6 +1595,17 @@ func validateDecision(d *Decision, accountEquity float64, btcEthLeverage, altcoi
 			if riskPercent > 0 {
 				riskRewardRatio = rewardPercent / riskPercent
 			}
+		}
+
+		if strings.HasPrefix(d.Action, "stop_entry_") {
+			if d.TriggerPrice <= 0 {
+				return fmt.Errorf("trigger price must be greater than 0: %.8f", d.TriggerPrice)
+			}
+
+			// For stop entry long, trigger price should be above current price
+			// For stop entry short, trigger price should be below current price
+			// Note: This is just a basic check, you might want to get the current price from the market
+			// and validate the trigger price is at a reasonable distance
 		}
 
 		if riskRewardRatio < 3.0 {
