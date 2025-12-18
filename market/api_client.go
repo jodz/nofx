@@ -56,7 +56,50 @@ func (c *APIClient) GetExchangeInfo() (*ExchangeInfo, error) {
 	return &exchangeInfo, nil
 }
 
-func (c *APIClient) GetKlines(symbol, interval string, limit int) ([]Kline, error) {
+// isKlineClosed 检查K线是否已闭合
+func isKlineClosed(kline *Kline, currentTime time.Time) bool {
+    // 使用UTC时间进行比较，确保时区一致性
+    utcNow := currentTime.UTC()
+    closeTime := time.UnixMilli(kline.CloseTime).UTC()
+    
+    // 如果当前UTC时间大于K线的CloseTime，则表示该K线已闭合
+    return utcNow.After(closeTime)
+}
+
+// FilterClosedKlines 过滤出已闭合的K线
+func FilterClosedKlines(klines []Kline) []Kline {
+    currentTime := time.Now().UTC() // 使用UTC时间
+    var closedKlines []Kline
+    
+    for _, kline := range klines {
+        if isKlineClosed(&kline, currentTime) {
+            closedKlines = append(closedKlines, kline)
+        } else {
+            // 记录未闭合的K线信息，用于调试
+            closeTime := time.UnixMilli(kline.CloseTime).UTC()
+            log.Printf("Skipping unclosed kline: closeTime=%v, currentTime=%v", closeTime, currentTime)
+        }
+    }
+    
+    // 记录过滤后的K线数量
+    if len(klines) > 0 && len(closedKlines) < len(klines) {
+        first := time.UnixMilli(klines[0].CloseTime).UTC()
+        last := time.UnixMilli(klines[len(klines)-1].CloseTime).UTC()
+        log.Printf("Filtered %d/%d klines, time range: %v to %v", 
+            len(closedKlines), len(klines), first, last)
+    }
+    
+    return closedKlines
+}
+
+// GetKlines 获取K线数据
+// 默认只返回已闭合的K线，可以通过 onlyClosed=false 获取所有K线
+func (c *APIClient) GetKlines(symbol, interval string, limit int, onlyClosed ...bool) ([]Kline, error) {
+	// 默认只返回已闭合的K线
+	closeOnly := true
+	if len(onlyClosed) > 0 {
+		closeOnly = onlyClosed[0]
+	}
 	url := fmt.Sprintf("%s/fapi/v1/klines", baseURL)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -95,6 +138,11 @@ func (c *APIClient) GetKlines(symbol, interval string, limit int) ([]Kline, erro
 			continue
 		}
 		klines = append(klines, kline)
+	}
+
+	// 检查是否需要过滤未闭合的K线
+	if closeOnly {
+		klines = FilterClosedKlines(klines)
 	}
 
 	return klines, nil
