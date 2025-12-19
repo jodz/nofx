@@ -50,7 +50,7 @@ interface TradingViewChartProps {
 }
 
 function TradingViewChartComponent({
-  defaultSymbol = 'BTCUSDT',
+  defaultSymbol = 'SOLUSDT',
   defaultExchange = 'BINANCE',
   height = 400,
   showToolbar = true,
