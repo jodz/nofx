@@ -1565,7 +1565,7 @@ func validateDecision(d *Decision, accountEquity float64, btcEthLeverage, altcoi
 			return fmt.Errorf("stop loss and take profit must be greater than 0")
 		}
 
-		if d.Action == "open_long" {
+		if d.Action == "open_long" || strings.HasSuffix(d.Action, "long") {
 			if d.StopLoss >= d.TakeProfit {
 				return fmt.Errorf("for long positions, stop loss price must be less than take profit price")
 			}
@@ -1576,14 +1576,14 @@ func validateDecision(d *Decision, accountEquity float64, btcEthLeverage, altcoi
 		}
 
 		var entryPrice float64
-		if d.Action == "open_long" {
+		if d.Action == "open_long" || strings.HasSuffix(d.Action, "long") {
 			entryPrice = d.StopLoss + (d.TakeProfit-d.StopLoss)*0.2
 		} else {
 			entryPrice = d.StopLoss - (d.StopLoss-d.TakeProfit)*0.2
 		}
 
 		var riskPercent, rewardPercent, riskRewardRatio float64
-		if d.Action == "open_long" {
+		if d.Action == "open_long" || strings.HasSuffix(d.Action, "long") {
 			riskPercent = (entryPrice - d.StopLoss) / entryPrice * 100
 			rewardPercent = (d.TakeProfit - entryPrice) / entryPrice * 100
 			if riskPercent > 0 {
@@ -1600,6 +1600,16 @@ func validateDecision(d *Decision, accountEquity float64, btcEthLeverage, altcoi
 		if strings.HasPrefix(d.Action, "stop_entry_") {
 			if d.TriggerPrice <= 0 {
 				return fmt.Errorf("trigger price must be greater than 0: %.8f", d.TriggerPrice)
+			}
+
+			if d.Action == "stop_entry_long" {
+				if d.TriggerPrice <= d.StopLoss {
+					return fmt.Errorf("for stop_entry_long, trigger price must be greater than stop loss price")
+				}
+			} else if d.Action == "stop_entry_short" {
+				if d.TriggerPrice >= d.StopLoss {
+					return fmt.Errorf("for stop_entry_short, trigger price must be less than stop loss price")
+				}
 			}
 
 			// For stop entry long, trigger price should be above current price
