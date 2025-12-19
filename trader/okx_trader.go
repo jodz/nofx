@@ -1230,7 +1230,6 @@ func (t *OKXTrader) CreateStopEntryOrder(symbol, direction string, triggerPrice,
 		"triggerPxVar":    0,      // No price variance
 		"tpTriggerPxType": "last",
 		"slTriggerPxType": "last",
-		"tgtCcy":          "base_ccy", // Use base currency for quantity
 		"clOrdId":         genOkxClOrdID(),
 		"tag":             okxTag,
 	}
