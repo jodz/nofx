@@ -1254,12 +1254,6 @@ func (at *AutoTrader) executeStopEntryWithRecord(decision *decision.Decision, ac
 		strings.ToUpper(direction), decision.Symbol,
 		decision.TriggerPrice, decision.StopLoss, decision.TakeProfit)
 
-	// Get instrument info for tick size
-	inst, err := at.trader.(*OKXTrader).getInstrument(decision.Symbol)
-	if err != nil {
-		return fmt.Errorf("failed to get instrument info: %w", err)
-	}
-
 	// Calculate quantity: position size in USD / trigger price
 	quantity := decision.PositionSizeUSD / decision.TriggerPrice
 	actionRecord.Quantity = quantity
@@ -1288,7 +1282,7 @@ func (at *AutoTrader) executeStopEntryWithRecord(decision *decision.Decision, ac
 	}
 
 	// Record order ID
-	if orderID, ok := order["orderId"].(string); ok {
+	if orderID, ok := order["orderId"].(int64); ok {
 		actionRecord.OrderID = orderID
 	}
 
