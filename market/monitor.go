@@ -260,10 +260,13 @@ func (m *WSMonitor) GetCurrentKlines(symbol string, duration string) ([]Kline, e
 		return result, nil
 	}
 
-	// ✅ FIX: Return deep copy instead of reference, avoid concurrent race conditions
+	// 获取并过滤K线数据
 	klines := value.([]Kline)
-	result := make([]Kline, len(klines))
-	copy(result, klines)
+	filteredKlines := FilterClosedKlines(klines)
+
+	// 返回过滤后的K线数据深拷贝
+	result := make([]Kline, len(filteredKlines))
+	copy(result, filteredKlines)
 	return result, nil
 }
 
